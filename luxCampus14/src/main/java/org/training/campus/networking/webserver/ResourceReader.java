@@ -1,12 +1,19 @@
 package org.training.campus.networking.webserver;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 public class ResourceReader {
 	
-	private String webAppPath;
-	
-	public String readResource(String uri) {
-		return null;//TODO
-		
+	public InputStream readResource(String url) throws IOException {
+		return new BufferedInputStream(new FileInputStream(new File(url)));
+	}
+
+	public InputStream readResource(File file) throws IOException {
+		return new BufferedInputStream(new FileInputStream(file));
 	}
 
 }

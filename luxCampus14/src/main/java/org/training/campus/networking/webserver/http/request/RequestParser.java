@@ -28,7 +28,7 @@ public class RequestParser {
 				if (line.isEmpty()) {
 					break;
 				}
-				RequestHeader header = parseRequestHeader(line, request);
+				RequestHeader header = parseRequestHeader(line);
 				request.addHeader(header.name(), header);
 			} while (true);
 
@@ -65,7 +65,7 @@ public class RequestParser {
 		return new HttpRequest(url, httpMethod.get(), protocol);
 	}
 
-	private RequestHeader parseRequestHeader(String line, HttpRequest request) {
+	private RequestHeader parseRequestHeader(String line) {
 		Matcher matcher = HttpToken.REQUEST_HEADER_SEPARATOR.getPattern().matcher(line);
 
 		if (!matcher.find())

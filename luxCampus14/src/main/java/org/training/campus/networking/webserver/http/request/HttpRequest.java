@@ -69,14 +69,15 @@ public class HttpRequest implements Iterable<RequestHeader>, AutoCloseable {
 	@Override
 	public boolean equals(Object o) {
 		if (o instanceof HttpRequest r) {
-			return receivedTime.equals(r.receivedTime) && Objects.equals(url, r.url) && method == r.method;
+			return receivedTime.equals(r.receivedTime) && Objects.equals(url, r.url) && method == r.method
+					&& Objects.equals(protocolVersion, r.protocolVersion);
 		}
 		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(receivedTime, url, method);
+		return Objects.hash(receivedTime, url, method, protocolVersion);
 	}
 
 	@Override

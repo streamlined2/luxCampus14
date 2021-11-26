@@ -5,7 +5,6 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -96,6 +95,7 @@ public class Server extends Worker {
 							new OutputStreamWriter(socket.getOutputStream(), charset), BUFFER_SIZE)) {
 
 				while (!(isDone() || Thread.interrupted())) {
+					//TODO implement request handler
 				}
 			} catch (IOException e) {
 				e.printStackTrace();

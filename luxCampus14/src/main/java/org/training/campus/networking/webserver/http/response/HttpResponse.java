@@ -73,14 +73,14 @@ public class HttpResponse implements Iterable<ResponseHeader>, AutoCloseable {
 	public boolean equals(Object o) {
 		if (o instanceof HttpResponse r) {
 			return formedTime.equals(r.formedTime) && Objects.equals(protocol, r.protocol)
-					&& statusClass == r.statusClass && statusCode == r.statusCode;
+					&& statusCode == r.statusCode;
 		}
 		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(formedTime, protocol, statusClass, statusCode);
+		return Objects.hash(formedTime, protocol, statusCode);
 	}
 
 	@Override
@@ -96,7 +96,7 @@ public class HttpResponse implements Iterable<ResponseHeader>, AutoCloseable {
 
 	@Override
 	public void close() throws Exception {
-		if(messageBody.isPresent()) {
+		if (messageBody.isPresent()) {
 			messageBody.get().close();
 		}
 	}
