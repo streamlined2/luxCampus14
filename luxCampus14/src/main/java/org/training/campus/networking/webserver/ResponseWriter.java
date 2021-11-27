@@ -9,17 +9,21 @@ import org.training.campus.networking.webserver.exception.ResponseFailedExceptio
 import org.training.campus.networking.webserver.http.HttpToken;
 import org.training.campus.networking.webserver.http.response.HttpResponse;
 import org.training.campus.networking.webserver.http.response.ResponseHeader;
+import org.training.campus.networking.webserver.http.response.ResponseMessageBody;
 import org.training.campus.networking.webserver.io.Sink;
+import org.training.campus.networking.webserver.io.Utilities;
 
 public class ResponseWriter {
 
 	public void send(Sink sink, HttpResponse response) {
 		try {
-			Writer writer = sink.getWriter();
+			var writer = sink.getWriter();
 			writeStatusLine(writer, response);
 			writeHeaderLines(writer, response);
 			writeEmptyLine(writer);
+			writer.flush();
 			writeMessageBody(sink.getOutputStream(), response);
+			sink.flush();
 		} catch (IOException e) {
 			throw new ResponseFailedException(e);
 		}
@@ -50,14 +54,11 @@ public class ResponseWriter {
 		writer.append(HttpToken.END_OF_LINE.getValue());
 	}
 
-	private void writeMessageBody(OutputStream os, HttpResponse response) {
-		response.getMessageBody().ifPresent(body -> {
-			try {
-				body.getInputStream().transferTo(os);
-			} catch (IOException e) {
-				throw new ResponseFailedException(e);
-			}
-		});
+	private void writeMessageBody(OutputStream os, HttpResponse response) throws IOException {
+		Optional<ResponseMessageBody> body = response.getMessageBody();
+		if (body.isPresent()) {
+			Utilities.transferTo(body.get().getInputStream(), os, response.getContentSize());
+		}
 	}
 
 }

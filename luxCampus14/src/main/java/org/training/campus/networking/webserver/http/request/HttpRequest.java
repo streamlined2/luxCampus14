@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
 
+import org.training.campus.networking.webserver.exception.MalformedRequestException;
 import org.training.campus.networking.webserver.http.HttpMethod;
 
 public class HttpRequest implements Iterable<RequestHeader>, AutoCloseable {
@@ -66,6 +67,20 @@ public class HttpRequest implements Iterable<RequestHeader>, AutoCloseable {
 		this.messageBody = messageBody;
 	}
 
+	public int getContentSize() {
+		try {
+			int size = 0;
+			for (var header : this) {
+				if (header.hasContentSize()) {
+					size += Integer.parseInt(header.value());
+				}
+			}
+			return size;
+		}catch (NumberFormatException e) {
+			throw new MalformedRequestException(e);
+		}
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (o instanceof HttpRequest r) {
@@ -82,8 +97,14 @@ public class HttpRequest implements Iterable<RequestHeader>, AutoCloseable {
 
 	@Override
 	public String toString() {
-		return new StringJoiner(" ", "[", "]").add(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(receivedTime))
-				.add(method.name()).add(url).add(protocolVersion).toString();
+		final var join = new StringJoiner(" ");
+		join.add(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(receivedTime)).add(method.name()).add(url)
+				.add(protocolVersion).add("\n");
+		forEach(header -> join.add(header.toString()).add("\n"));
+		messageBody.ifPresent(body -> {
+			join.add(new String(body.toByteArray())).add("\n");
+		});
+		return join.toString();
 	}
 
 	@Override

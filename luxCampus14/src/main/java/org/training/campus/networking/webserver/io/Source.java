@@ -8,6 +8,7 @@ import java.nio.charset.Charset;
 import java.util.Scanner;
 
 public class Source implements AutoCloseable {
+
 	private final InputStream inputStream;
 	private final Scanner scanner;
 
@@ -22,6 +23,10 @@ public class Source implements AutoCloseable {
 
 	public Scanner getScanner() {
 		return scanner;
+	}
+
+	public boolean ready() throws IOException {
+		return inputStream.available() > 0;
 	}
 
 	@Override

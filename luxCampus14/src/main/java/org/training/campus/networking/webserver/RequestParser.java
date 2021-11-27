@@ -1,7 +1,6 @@
 package org.training.campus.networking.webserver;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.regex.Matcher;
@@ -14,6 +13,7 @@ import org.training.campus.networking.webserver.http.request.HttpRequest;
 import org.training.campus.networking.webserver.http.request.RequestHeader;
 import org.training.campus.networking.webserver.http.request.RequestMessageBody;
 import org.training.campus.networking.webserver.io.Source;
+import org.training.campus.networking.webserver.io.Utilities;
 
 public class RequestParser {
 
@@ -38,7 +38,7 @@ public class RequestParser {
 				request.addHeader(header.name(), header);
 			} while (true);
 
-			getMessageBody(source.getInputStream(), request);
+			getMessageBody(source, request);
 			return request;
 		} catch (IOException e) {
 			throw new MalformedRequestException(e);
@@ -86,10 +86,12 @@ public class RequestParser {
 		return new RequestHeader(header, value);
 	}
 
-	private void getMessageBody(InputStream inputStream, HttpRequest request) throws IOException {
-		RequestMessageBody body = new ByteArrayRequestMessageBody();
-		request.setMessageBody(Optional.of(body));
-		inputStream.transferTo(body.getOutputStream());
+	private void getMessageBody(Source source, HttpRequest request) throws IOException {
+		if (request.getContentSize() > 0) {
+			RequestMessageBody body = new ByteArrayRequestMessageBody();
+			request.setMessageBody(Optional.of(body));
+			Utilities.transferTo(source.getInputStream(), body.getOutputStream(), request.getContentSize());
+		}
 	}
 
 }
