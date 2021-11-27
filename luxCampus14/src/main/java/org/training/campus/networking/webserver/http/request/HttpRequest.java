@@ -95,6 +95,7 @@ public class HttpRequest implements Iterable<RequestHeader>, AutoCloseable {
 	public void close() throws Exception {
 		if (messageBody.isPresent()) {
 			messageBody.get().close();
+			messageBody = Optional.empty();
 		}
 	}
 

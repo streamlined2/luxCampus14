@@ -1,4 +1,4 @@
-package org.training.campus.networking.webserver.http.request;
+package org.training.campus.networking.webserver;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,11 +9,17 @@ import java.util.regex.Matcher;
 import org.training.campus.networking.webserver.exception.MalformedRequestException;
 import org.training.campus.networking.webserver.http.HttpMethod;
 import org.training.campus.networking.webserver.http.HttpToken;
+import org.training.campus.networking.webserver.http.request.ByteArrayRequestMessageBody;
+import org.training.campus.networking.webserver.http.request.HttpRequest;
+import org.training.campus.networking.webserver.http.request.RequestHeader;
+import org.training.campus.networking.webserver.http.request.RequestMessageBody;
+import org.training.campus.networking.webserver.io.Source;
 
 public class RequestParser {
 
-	public HttpRequest receive(InputStream inputStream) {
-		try (Scanner lineScanner = new Scanner(inputStream)) {
+	public HttpRequest parse(Source source) {
+		try {
+			Scanner lineScanner = source.getScanner();
 			lineScanner.useDelimiter(HttpToken.END_OF_LINE.getPattern());
 
 			if (!lineScanner.hasNext())
@@ -32,7 +38,7 @@ public class RequestParser {
 				request.addHeader(header.name(), header);
 			} while (true);
 
-			getMessageBody(inputStream, request);
+			getMessageBody(source.getInputStream(), request);
 			return request;
 		} catch (IOException e) {
 			throw new MalformedRequestException(e);

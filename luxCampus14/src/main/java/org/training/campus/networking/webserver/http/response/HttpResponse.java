@@ -98,6 +98,7 @@ public class HttpResponse implements Iterable<ResponseHeader>, AutoCloseable {
 	public void close() throws Exception {
 		if (messageBody.isPresent()) {
 			messageBody.get().close();
+			messageBody = Optional.empty();
 		}
 	}
 

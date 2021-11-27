@@ -17,6 +17,7 @@ public class ByteArrayResponseMessageBody implements ResponseMessageBody {
 	public void close() throws Exception {
 		if (inputStream != null) {
 			inputStream.close();
+			inputStream = null;
 		}
 	}
 

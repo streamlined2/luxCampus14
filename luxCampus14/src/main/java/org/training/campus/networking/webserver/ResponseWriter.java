@@ -1,22 +1,25 @@
-package org.training.campus.networking.webserver.http.response;
+package org.training.campus.networking.webserver;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.Optional;
 
 import org.training.campus.networking.webserver.exception.ResponseFailedException;
 import org.training.campus.networking.webserver.http.HttpToken;
+import org.training.campus.networking.webserver.http.response.HttpResponse;
+import org.training.campus.networking.webserver.http.response.ResponseHeader;
+import org.training.campus.networking.webserver.io.Sink;
 
 public class ResponseWriter {
 
-	public void send(OutputStream os, HttpResponse response) {
-		try (Writer writer = new OutputStreamWriter(os)) {
+	public void send(Sink sink, HttpResponse response) {
+		try {
+			Writer writer = sink.getWriter();
 			writeStatusLine(writer, response);
 			writeHeaderLines(writer, response);
 			writeEmptyLine(writer);
-			writeMessageBody(os, response);
+			writeMessageBody(sink.getOutputStream(), response);
 		} catch (IOException e) {
 			throw new ResponseFailedException(e);
 		}

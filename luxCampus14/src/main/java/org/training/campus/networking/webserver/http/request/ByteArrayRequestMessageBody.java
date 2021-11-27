@@ -14,9 +14,7 @@ public class ByteArrayRequestMessageBody implements RequestMessageBody {
 
 	@Override
 	public void close() throws Exception {
-		if (outputStream != null) {
-			outputStream.close();
-		}
+		outputStream.close();
 	}
 
 	@Override
