@@ -1,8 +1,6 @@
 package org.training.campus.networking.webserver;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -46,7 +44,7 @@ public class ResourceReader {
 		int index = url.indexOf(context);
 		if (index == -1)
 			throw new MalformedResourceUrlException(
-					String.format("resource url '%s' doesn't contain context '%s'", url, context));
+					String.format("resource url '%s' cannot be located within context '%s'", url, context));
 
 		index += context.length();
 		if (url.startsWith("/", index)) {

@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
 import org.training.campus.networking.webserver.exception.CommunicationException;
 import org.training.campus.networking.webserver.exception.MalformedRequestException;
@@ -149,7 +150,7 @@ public class Server extends Worker {
 
 		private HttpResponse requestHandledResponse(String url) throws IOException {
 			ByteBuffer content = resourceReader.readResource(url, context);
-			return formResponse(content, HttpContentType.TEXT_HTML.getEncoding(charset), HttpStatusCode.OK);
+			return createResponse(content, HttpContentType.getByUrl(url), HttpStatusCode.OK);
 		}
 
 		private HttpResponse communicationErrorResponse(CommunicationException e) {
@@ -187,24 +188,33 @@ public class Server extends Worker {
 					HttpStatusCode.INTERNAL_SERVER_ERROR);
 		}
 
-		private HttpResponse formResponse(ByteBuffer dataBuffer, String replyType, HttpStatusCode statusCode) {
+		private HttpResponse createResponse(ByteBuffer dataBuffer, Optional<HttpContentType> contentType,
+				HttpStatusCode statusCode) {
+			String replyType = HttpContentType.TEXT_HTML.getEncoding(charset);
+			if (contentType.isPresent()) {
+				replyType = contentType.get().getEncoding(charset);
+			}
+			return createResponse(dataBuffer, replyType, statusCode);
+		}
+
+		private HttpResponse createResponse(ByteBuffer dataBuffer, String replyType, HttpStatusCode statusCode) {
 			byte[] byteData = new byte[dataBuffer.limit()];
 			dataBuffer.get(byteData);
-			return formResponse(byteData, replyType, statusCode);
+			return createResponse(byteData, replyType, statusCode);
 		}
 
 		private HttpResponse createResponse(String reply, String replyType, HttpStatusCode statusCode) {
-			return formResponse(reply.getBytes(charset), replyType, statusCode);
+			return createResponse(reply.getBytes(charset), replyType, statusCode);
 		}
 
-		private HttpResponse formResponse(byte[] data, String replyType, HttpStatusCode statusCode) {
+		private HttpResponse createResponse(byte[] data, String replyType, HttpStatusCode statusCode) {
 			HttpResponse response = new HttpResponse(HttpParameters.PROTOCOL_VERSION, statusCode.getCode());
 			response.setReason(statusCode.getReason());
 			response.setMessageBody(new ByteArrayResponseMessageBody(data));
 			response.addHeader(ResponseHeader.HeaderType.SERVER, SERVER_NAME);
 			response.addHeader(ResponseHeader.HeaderType.CONTENT_TYPE, replyType);
 			response.addHeader(ResponseHeader.HeaderType.CONTENT_LENGTH, String.valueOf(data.length));
-			response.addHeader(ResponseHeader.HeaderType.CONNECTION, "close");
+			response.addHeader(ResponseHeader.HeaderType.CONNECTION, "keep-alive");
 			response.addHeader(ResponseHeader.HeaderType.ACCEPT_RANGES, "bytes");
 			response.addHeader(ResponseHeader.HeaderType.DATE,
 					DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(response.getFormedTime()));
