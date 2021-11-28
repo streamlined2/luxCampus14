@@ -5,16 +5,26 @@ import java.util.Objects;
 public record RequestHeader(String name, String value) implements Comparable<RequestHeader> {
 
 	public enum HeaderType {
-		CONTENT_LENGTH("Content-Length"), TRANSFER_ENCODING("Transfer-Encoding");
+		CONTENT_LENGTH("Content-Length") {
+			@Override
+			public boolean hasContentSize() {
+				return true;
+			}
+		},
+		TRANSFER_ENCODING("Transfer-Encoding");
 
 		private String name;
 
 		private HeaderType(String name) {
 			this.name = name;
 		}
-		
+
 		public String getName() {
 			return name;
+		}
+
+		public boolean hasContentSize() {
+			return false;
 		}
 
 		public static HeaderType getType(String name) {
@@ -34,9 +44,13 @@ public record RequestHeader(String name, String value) implements Comparable<Req
 			throw new IllegalArgumentException("header name can't be blank");
 		}
 	}
-	
+
 	public boolean hasContentSize() {
-		return HeaderType.getType(name) == HeaderType.CONTENT_LENGTH;
+		var type = HeaderType.getType(name);
+		if (type == null) {
+			return false;
+		}
+		return type.hasContentSize();
 	}
 
 	@Override

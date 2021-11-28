@@ -13,7 +13,7 @@ public class Sink implements AutoCloseable {
 	private final Writer writer;
 
 	public Sink(Socket socket, int bufferSize, Charset charset) throws IOException {
-		outputStream = new BufferedOutputStream(socket.getOutputStream(), bufferSize); 
+		outputStream = new BufferedOutputStream(socket.getOutputStream(), bufferSize);
 		writer = new OutputStreamWriter(outputStream, charset);
 	}
 

@@ -76,7 +76,7 @@ public class HttpRequest implements Iterable<RequestHeader>, AutoCloseable {
 				}
 			}
 			return size;
-		}catch (NumberFormatException e) {
+		} catch (NumberFormatException e) {
 			throw new MalformedRequestException(e);
 		}
 	}

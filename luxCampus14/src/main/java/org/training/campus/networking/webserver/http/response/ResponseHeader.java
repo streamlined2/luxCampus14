@@ -5,9 +5,15 @@ import java.util.Objects;
 public record ResponseHeader(String name, String value) implements Comparable<ResponseHeader> {
 
 	public enum HeaderType {
+		CONTENT_LENGTH("Content-Length") {
+			@Override
+			public boolean hasContentSize() {
+				return true;
+			}
+		},
 		CONTENT_TYPE("Content-Type"), CONTENT_ENCODING("Content-Encoding"), CONTENT_LANGUAGE("Content-Language"),
-		CONTENT_LENGTH("Content-Length"), EXPIRES("Expires"), LAST_MODIFIED("Last-Modified"), SERVER("Server"),
-		TRANSFER_ENCODING("Transfer-Encoding"), CONNECTION("Connection"), DATE("Date"), ACCEPT_RANGES("Accept-Ranges");
+		EXPIRES("Expires"), LAST_MODIFIED("Last-Modified"), SERVER("Server"), TRANSFER_ENCODING("Transfer-Encoding"),
+		CONNECTION("Connection"), DATE("Date"), ACCEPT_RANGES("Accept-Ranges");
 
 		private String name;
 
@@ -17,6 +23,10 @@ public record ResponseHeader(String name, String value) implements Comparable<Re
 
 		public String getName() {
 			return name;
+		}
+
+		public boolean hasContentSize() {
+			return false;
 		}
 
 		public static HeaderType getType(String name) {
@@ -42,7 +52,11 @@ public record ResponseHeader(String name, String value) implements Comparable<Re
 	}
 
 	public boolean hasContentSize() {
-		return HeaderType.getType(name) == HeaderType.CONTENT_LENGTH;
+		var type = HeaderType.getType(name);
+		if (type == null) {
+			return false;
+		}
+		return type.hasContentSize();
 	}
 
 	@Override

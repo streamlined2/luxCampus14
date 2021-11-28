@@ -17,7 +17,7 @@ public class HttpResponse implements Iterable<ResponseHeader>, AutoCloseable {
 
 	private final LocalDateTime formedTime;
 	private final String protocol;
-	private final StatusClass statusClass;
+	private final HttpStatusClass statusClass;
 	private final int statusCode;
 	private Optional<String> reason;
 	private Optional<ResponseMessageBody> messageBody;
@@ -25,7 +25,7 @@ public class HttpResponse implements Iterable<ResponseHeader>, AutoCloseable {
 
 	public HttpResponse(String protocol, int statusCode) {
 		this.protocol = Objects.requireNonNull(protocol, "protocol shouldn't be null");
-		this.statusClass = StatusClass.getStatusClass(statusCode);
+		this.statusClass = HttpStatusClass.getStatusClass(statusCode);
 		this.statusCode = statusCode;
 		this.headers = new HashMap<>();
 		this.reason = Optional.empty();
@@ -47,7 +47,7 @@ public class HttpResponse implements Iterable<ResponseHeader>, AutoCloseable {
 		return protocol;
 	}
 
-	public StatusClass getStatusClass() {
+	public HttpStatusClass getStatusClass() {
 		return statusClass;
 	}
 
@@ -92,7 +92,7 @@ public class HttpResponse implements Iterable<ResponseHeader>, AutoCloseable {
 				}
 			}
 			return size;
-		}catch (NumberFormatException e) {
+		} catch (NumberFormatException e) {
 			throw new MalformedRequestException(e);
 		}
 	}
