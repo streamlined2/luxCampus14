@@ -7,7 +7,8 @@ import java.util.concurrent.RunnableFuture;
 public class Runner {
 	private static final int SERVER_COUNT = 1;
 	private static final int FIRST_SERVER_PORT = 4444;
-	private static final long WORKING_TIME = 10_000;
+	private static final String CONTEXT = "/context";
+	private static final long WORKING_TIME = 1_000_000_000;
 
 	public static void main(String[] args) {
 		final ThreadGroup serverGroup = new ThreadGroup("servers");
@@ -15,7 +16,8 @@ public class Runner {
 		try {
 			RequestParser parser = new RequestParser();
 			ResponseWriter writer = new ResponseWriter();
-			RunnableFuture<Void>[] servers = startServers(serverGroup, parser, writer);
+			ResourceReader resourceReader = new ResourceReader();
+			RunnableFuture<Void>[] servers = startServers(serverGroup, parser, writer, resourceReader, CONTEXT);
 
 			Thread.sleep(WORKING_TIME);
 
@@ -26,11 +28,11 @@ public class Runner {
 
 	}
 
-	private static RunnableFuture<Void>[] startServers(ThreadGroup group, RequestParser parser, ResponseWriter writer)
-			throws IOException {
+	private static RunnableFuture<Void>[] startServers(ThreadGroup group, RequestParser parser, ResponseWriter writer,
+			ResourceReader resourceReader, String context) throws IOException {
 		RunnableFuture<Void>[] servers = new Server[SERVER_COUNT];
 		for (int k = 0; k < SERVER_COUNT; k++) {
-			servers[k] = new Server(k, getServerPort(k), parser, writer);
+			servers[k] = new Server(k, getServerPort(k), parser, writer, resourceReader, context);
 			new Thread(group, servers[k]).start();
 		}
 		return servers;

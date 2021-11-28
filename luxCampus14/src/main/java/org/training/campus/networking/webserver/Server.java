@@ -4,12 +4,17 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 
 import org.training.campus.networking.webserver.exception.CommunicationException;
 import org.training.campus.networking.webserver.exception.MalformedRequestException;
+import org.training.campus.networking.webserver.exception.MalformedResourceUrlException;
+import org.training.campus.networking.webserver.exception.ResourceAccessException;
+import org.training.campus.networking.webserver.exception.ResourceNotFoundException;
+import org.training.campus.networking.webserver.exception.ResourceTooLargeException;
 import org.training.campus.networking.webserver.exception.ResponseFailedException;
 import org.training.campus.networking.webserver.http.HttpContentType;
 import org.training.campus.networking.webserver.http.HttpParameters;
@@ -29,14 +34,18 @@ public class Server extends Worker {
 	private final ServerSocket serverSocket;
 	private final RequestParser requestParser;
 	private final ResponseWriter responseWriter;
+	private final ResourceReader resourceReader;
 	private final ThreadGroup handlerGroup;
+	private final String context;
 	private int handlerCount;
 	private Charset charset;
 
-	public Server(int ordinal, int port, RequestParser requestParser, ResponseWriter responseWriter)
-			throws IOException {
+	public Server(int ordinal, int port, RequestParser requestParser, ResponseWriter responseWriter,
+			ResourceReader resourceReader, String context) throws IOException {
 		this.requestParser = requestParser;
 		this.responseWriter = responseWriter;
+		this.resourceReader = resourceReader;
+		this.context = context;
 		serverSocket = new ServerSocket(port);
 		serverSocket.setSoTimeout(ACCEPT_TIMEOUT);
 		handlerGroup = new ThreadGroup(String.valueOf(ordinal));
@@ -110,52 +119,91 @@ public class Server extends Worker {
 			}
 		}
 
-		private void handleRequest(Source source, Sink sink) {
+		private void handleRequest(Source source, Sink sink) throws IOException {
 			try {
 				HttpRequest request = requestParser.parse(source);
-				responseWriter.send(sink, requestHandledResponse());
+				responseWriter.send(sink, requestHandledResponse(request.getUrl()));
+			} catch (ResourceNotFoundException e) {
+				e.printStackTrace();
+				responseWriter.send(sink, resourceNotFoundResponse(e));
+			} catch (ResourceTooLargeException e) {
+				e.printStackTrace();
+				responseWriter.send(sink, resourceTooLargeResponse(e));
+			} catch (MalformedResourceUrlException e) {
+				e.printStackTrace();
+				responseWriter.send(sink, malformedResourceUrlResponse(e));
+			} catch (ResourceAccessException e) {
+				e.printStackTrace();
+				responseWriter.send(sink, resourceAccessResponse(e));
 			} catch (MalformedRequestException e) {
+				e.printStackTrace();
 				responseWriter.send(sink, malformedRequestResponse(e));
-				e.printStackTrace();
 			} catch (ResponseFailedException e) {
-				responseWriter.send(sink, cantHandleRequestResponse(e));
 				e.printStackTrace();
+				responseWriter.send(sink, responseFailResponse(e));
 			} catch (CommunicationException e) {
-				responseWriter.send(sink, communicationErrorResponse(e));
 				e.printStackTrace();
+				responseWriter.send(sink, communicationErrorResponse(e));
 			}
 		}
 
-		private HttpResponse requestHandledResponse() {
-			return formResponse("""
-							<!DOCTYPE html> <html>
-							<body> <h1>My First Heading</h1> <p>My first paragraph.</p> </body>
-							</html>
-					""", HttpContentType.TEXT_HTML.getEncoding(charset), HttpStatusCode.OK);
+		private HttpResponse requestHandledResponse(String url) throws IOException {
+			ByteBuffer content = resourceReader.readResource(url, context);
+			return formResponse(content, HttpContentType.TEXT_HTML.getEncoding(charset), HttpStatusCode.OK);
 		}
 
 		private HttpResponse communicationErrorResponse(CommunicationException e) {
-			return formResponse(e.getLocalizedMessage(), HttpContentType.TEXT_HTML.getEncoding(charset),
+			return createResponse(e.getLocalizedMessage(), HttpContentType.TEXT_HTML.getEncoding(charset),
 					HttpStatusCode.SERVICE_UNAVAILABLE);
 		}
 
-		private HttpResponse cantHandleRequestResponse(ResponseFailedException e) {
-			return formResponse(e.getLocalizedMessage(), HttpContentType.TEXT_HTML.getEncoding(charset),
+		private HttpResponse responseFailResponse(ResponseFailedException e) {
+			return createResponse(e.getLocalizedMessage(), HttpContentType.TEXT_HTML.getEncoding(charset),
 					HttpStatusCode.INTERNAL_SERVER_ERROR);
 		}
 
 		private HttpResponse malformedRequestResponse(MalformedRequestException e) {
-			return formResponse(e.getLocalizedMessage(), HttpContentType.TEXT_HTML.getEncoding(charset),
+			return createResponse(e.getLocalizedMessage(), HttpContentType.TEXT_HTML.getEncoding(charset),
 					HttpStatusCode.BAD_REQUEST);
 		}
 
-		private HttpResponse formResponse(String reply, String replyType, HttpStatusCode statusCode) {
+		private HttpResponse resourceTooLargeResponse(ResourceTooLargeException e) {
+			return createResponse(e.getLocalizedMessage(), HttpContentType.TEXT_HTML.getEncoding(charset),
+					HttpStatusCode.REQUEST_ENTITY_TOO_LARGE);
+		}
+
+		private HttpResponse resourceNotFoundResponse(ResourceNotFoundException e) {
+			return createResponse(e.getLocalizedMessage(), HttpContentType.TEXT_HTML.getEncoding(charset),
+					HttpStatusCode.NOT_FOUND);
+		}
+
+		private HttpResponse malformedResourceUrlResponse(MalformedResourceUrlException e) {
+			return createResponse(e.getLocalizedMessage(), HttpContentType.TEXT_HTML.getEncoding(charset),
+					HttpStatusCode.BAD_REQUEST);
+		}
+
+		private HttpResponse resourceAccessResponse(ResourceAccessException e) {
+			return createResponse(e.getLocalizedMessage(), HttpContentType.TEXT_HTML.getEncoding(charset),
+					HttpStatusCode.INTERNAL_SERVER_ERROR);
+		}
+
+		private HttpResponse formResponse(ByteBuffer dataBuffer, String replyType, HttpStatusCode statusCode) {
+			byte[] byteData = new byte[dataBuffer.limit()];
+			dataBuffer.get(byteData);
+			return formResponse(byteData, replyType, statusCode);
+		}
+
+		private HttpResponse createResponse(String reply, String replyType, HttpStatusCode statusCode) {
+			return formResponse(reply.getBytes(charset), replyType, statusCode);
+		}
+
+		private HttpResponse formResponse(byte[] data, String replyType, HttpStatusCode statusCode) {
 			HttpResponse response = new HttpResponse(HttpParameters.PROTOCOL_VERSION, statusCode.getCode());
 			response.setReason(statusCode.getReason());
-			response.setMessageBody(new ByteArrayResponseMessageBody(reply.getBytes()));
+			response.setMessageBody(new ByteArrayResponseMessageBody(data));
 			response.addHeader(ResponseHeader.HeaderType.SERVER, SERVER_NAME);
 			response.addHeader(ResponseHeader.HeaderType.CONTENT_TYPE, replyType);
-			response.addHeader(ResponseHeader.HeaderType.CONTENT_LENGTH, String.valueOf(reply.getBytes().length));
+			response.addHeader(ResponseHeader.HeaderType.CONTENT_LENGTH, String.valueOf(data.length));
 			response.addHeader(ResponseHeader.HeaderType.CONNECTION, "close");
 			response.addHeader(ResponseHeader.HeaderType.ACCEPT_RANGES, "bytes");
 			response.addHeader(ResponseHeader.HeaderType.DATE,

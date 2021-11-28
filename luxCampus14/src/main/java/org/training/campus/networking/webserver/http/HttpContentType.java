@@ -9,7 +9,14 @@ public enum HttpContentType {
 		public String getEncoding(Charset charset) {
 			return String.format("%s; charset=%s", getEncoding(), charset.name());
 		}
-	};
+	},
+	TEXT_PLAIN("text/plain") {
+		@Override
+		public String getEncoding(Charset charset) {
+			return String.format("%s; charset=%s", getEncoding(), charset.name());
+		}
+	},
+	APPLICATION_OCTET_STREAM("application/octet-stream"), IMAGE_JPEG("image/jpeg"), VIDEO_MP4("video/mp4");
 
 	private final String encoding;
 

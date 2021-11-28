@@ -3,6 +3,7 @@ package org.training.campus.networking.webserver.http.response;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 public class ByteArrayResponseMessageBody implements ResponseMessageBody {
 
@@ -11,6 +12,11 @@ public class ByteArrayResponseMessageBody implements ResponseMessageBody {
 
 	public ByteArrayResponseMessageBody(byte[] byteData) {
 		this.byteData = byteData;
+	}
+
+	public ByteArrayResponseMessageBody(ByteBuffer buffer) {
+		byteData = new byte[buffer.limit()];
+		buffer.get(byteData);
 	}
 
 	@Override
